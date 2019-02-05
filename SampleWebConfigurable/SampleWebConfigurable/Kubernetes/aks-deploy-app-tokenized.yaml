@@ -1,0 +1,80 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: __K8sAppName__
+  labels:
+    app: __K8sAppName__
+spec:
+  selector:
+    matchLabels:
+      app: __K8sAppName__
+  template:
+    metadata:
+      labels:
+        app: __K8sAppName__
+    spec:
+      containers:
+      - name: __K8sAppName__
+        image: __RepositoryImageName__
+        volumeMounts:
+        - name: __KeyVaultName__-flexvolume
+          mountPath: /kvmnt
+          readOnly: true
+        imagePullPolicy: Always
+        resources:
+          requests:
+            cpu: 100m
+            memory: 100Mi
+          limits:
+            cpu: 100m
+            memory: 100Mi
+        ports:
+        - containerPort: 80
+        envFrom:
+          - configMapRef:
+              name: __K8sAppName__-configmap
+      volumes:
+      - name: __KeyVaultName__-flexvolume
+        flexVolume:
+          driver: "azure/kv"
+          secretRef:
+            name: __KeyVaultSecretName__ # reference the service principal kubernetes secret
+          options:
+            usepodidentity: "false"                         # [OPTIONAL] if not provided, will default to "false"
+            keyvaultname: "__KeyVaultName__"                # the name of the KeyVault
+            keyvaultobjectnames: "__KeyVaultObjectNames__"  # list of KeyVault object names (semi-colon separated)
+            keyvaultobjecttypes: __KeyVaultObjectTypes__    # list of KeyVault object types: secret, key or cert (semi-colon separated)
+            keyvaultobjectversions: ""                      # [OPTIONAL] list of KeyVault object versions (semi-colon separated), will get latest if empty
+            resourcegroup: "__KeyVaultRGName__"             # the resource group of the KeyVault        
+            subscriptionid: "__SubscriptionId__"            # the subscription ID of the KeyVault
+            tenantid: "__TenantId__"                        # the tenant ID of the KeyVault
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: __K8sAppName__
+  labels:
+    app: __K8sAppName__
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+  selector:
+    app: __K8sAppName__
+---
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: __K8sAppName__-hpa
+  labels:
+    app: __K8sAppName__
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: __K8sAppName__
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 80 
+  

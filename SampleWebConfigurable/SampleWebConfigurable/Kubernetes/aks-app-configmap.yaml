@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: samplewebconfigurable-demo-configmap
+data:
+  MySetting: "This is my config map setting."
+  MySecretFile: "/kvmnt/MySecret"
